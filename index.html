@@ -25,44 +25,50 @@
     </div>
 
     <script>
-        const FIREBASE_URL = "https://cercaclick-default-rtdb.firebaseio.com/PanaderiaDonPepe.json"; //
+    // 1. Detectar el nombre del negocio desde la URL (?store=Nombre)
+    const urlParams = new URLSearchParams(window.location.search);
+    const storeId = urlParams.get('store') || "PanaderiaDonPepe"; // "PanaderiaDonPepe" es el respaldo
 
-        async function loadCatalog() {
-            try {
-                const response = await fetch(FIREBASE_URL);
-                const data = await response.json();
-                
-                document.getElementById('storeTitle').innerText = "Panadería Don Pepe";
-                const list = document.getElementById('productList');
-                list.innerHTML = "";
+    const FIREBASE_URL = `https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json`;
 
-                data.items.forEach(item => {
-                    const card = `
-                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center transform active:scale-95 transition-transform">
-                            <div class="flex-1">
-                                <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
-                                <h3 class="text-lg font-bold text-gray-800 mt-1">${item.Name}</h3>
-                                <p class="text-gray-900 font-extrabold text-xl mt-1">$${item.Price}</p>
-                            </div>
-                            <button onclick="order('${item.Name}', ${item.Price})" 
-                                    class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center transition-colors">
-                                <i class="fab fa-whatsapp text-2xl"></i>
-                            </button>
-                        </div>`;
-                    list.innerHTML += card;
-                });
-            } catch (e) {
-                console.error("Error", e);
-            }
+    async function loadCatalog() {
+        try {
+            const response = await fetch(FIREBASE_URL);
+            const data = await response.json();
+            
+            // Usamos el nombre que viene en la "info" que subiste desde la App
+            document.getElementById('storeTitle').innerText = data.info.StoreName || storeId;
+            
+            const list = document.getElementById('productList');
+            list.innerHTML = "";
+
+            data.items.forEach(item => {
+                const card = `
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div class="flex-1">
+                            <span class="text-[10px] font-bold text-orange-500 uppercase bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
+                            <h3 class="text-lg font-bold text-gray-800 mt-1">${item.Name}</h3>
+                            <p class="text-gray-900 font-extrabold text-xl mt-1">$${item.Price}</p>
+                        </div>
+                        <button onclick="order('${item.Name}', ${item.Price}, '${data.info.WhatsAppPhone}')" 
+                                class="bg-green-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center">
+                            <i class="fab fa-whatsapp text-2xl"></i>
+                        </button>
+                    </div>`;
+                list.innerHTML += card;
+            });
+        } catch (e) {
+            console.error("Error cargando el catálogo", e);
         }
+    }
 
-        function order(name, price) {
-            const phone = "573001234567"; // Teléfono real del negocio
-            const msg = encodeURIComponent(`*NUEVO PEDIDO DESDE EL CATÁLOGO*\n\n✅ *Producto:* ${name}\n💰 *Precio:* $${price}\n\n¿Me confirma la disponibilidad?`);
-            window.location.href = `https://wa.me/${phone}?text=${msg}`;
-        }
+    function order(name, price, phone) {
+        const msg = encodeURIComponent(`*NUEVO PEDIDO*\n\n✅ *Producto:* ${name}\n💰 *Precio:* $${price}`);
+        window.location.href = `https://wa.me/${phone}?text=${msg}`;
+    }
 
-        loadCatalog();
-    </script>
+    loadCatalog();
+</script>
 </body>
 </html>
+
