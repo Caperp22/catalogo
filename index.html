@@ -3,83 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CercaClick - Catálogo Digital</title>
+    <title>CercaClick - Carrito de Compras</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
+<body class="bg-gray-50 min-h-screen font-sans pb-32">
     <div class="bg-gradient-to-r from-orange-500 to-amber-600 pt-10 pb-20 px-6 rounded-b-[3rem] shadow-xl text-center">
-        <div class="w-20 h-20 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-inner">
-            <i class="fas fa-bread-slice text-orange-500 text-3xl"></i>
+        <div class="w-16 h-16 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-inner">
+            <i class="fas fa-store text-orange-500 text-2xl"></i>
         </div>
-        <h1 id="storeTitle" class="text-white text-3xl font-black uppercase tracking-tighter">Cargando...</h1>
-        <p class="text-orange-100 text-sm mt-1">Haz tu pedido y recíbelo en casa 🛵</p>
+        <h1 id="storeTitle" class="text-white text-2xl font-black uppercase tracking-tighter text-shadow-sm">Cargando...</h1>
     </div>
 
-    <div class="max-w-md mx-auto -mt-10 px-4 pb-10">
+    <div class="max-w-md mx-auto -mt-10 px-4">
         <div id="productList" class="grid grid-cols-1 gap-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm text-center text-gray-400">
-                <i class="fas fa-spinner fa-spin mr-2"></i> Actualizando menú...
             </div>
+    </div>
+
+    <div id="cartBar" class="fixed bottom-6 left-4 right-4 bg-green-600 text-white rounded-3xl shadow-2xl p-4 transform translate-y-32 transition-transform duration-300 flex justify-between items-center z-50">
+        <div class="flex flex-col">
+            <span id="cartCount" class="text-xs font-bold bg-white text-green-700 px-2 py-0.5 rounded-full w-fit">0 items</span>
+            <span id="cartTotal" class="text-xl font-black">$0</span>
         </div>
+        <button onclick="sendWhatsAppOrder()" class="bg-white text-green-700 px-6 py-2 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-transform">
+            Pedir por <i class="fab fa-whatsapp text-xl"></i>
+        </button>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const storeId = urlParams.get('store');
+        let cart = {}; // Estructura: { "Nombre": { price: 1500, qty: 1 } }
+        let storePhone = "";
 
         async function loadCatalog() {
-            const list = document.getElementById('productList');
-            const title = document.getElementById('storeTitle');
-
-            if (!storeId) {
-                title.innerText = "CercaClick";
-                list.innerHTML = "<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-red-500'>Error: Escanee un código QR válido.</div>";
-                return;
-            }
-
+            if (!storeId) return;
             try {
                 const response = await fetch(`https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json`);
                 const data = await response.json();
+                if (!data || !data.items) return;
 
-                // --- EL CAMBIO ESTÁ AQUÍ ---
-                // Si NO hay datos o NO hay productos, mostramos el error
-                if (!data || !data.items) {
-                    title.innerText = "No encontrado";
-                    list.innerHTML = `<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-gray-500'>El negocio "${storeId}" aún no tiene productos publicados.</div>`;
-                    return;
-                }
-
-                // Si llegamos aquí, es porque SÍ hay datos. Los mostramos:
-                title.innerText = data.info.StoreName || "Mi Negocio";
-                const storePhone = data.info.WhatsAppPhone || "573001234567";
+                document.getElementById('storeTitle').innerText = data.info.StoreName || "Mi Negocio";
+                storePhone = data.info.WhatsAppPhone || "573001234567";
                 
+                const list = document.getElementById('productList');
                 list.innerHTML = "";
 
                 data.items.forEach(item => {
-                    const card = `
-                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center transform active:scale-95 transition-transform">
+                    list.innerHTML += `
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
                             <div class="flex-1">
-                                <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
+                                <span class="text-[10px] font-bold text-orange-500 uppercase bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
                                 <h3 class="text-lg font-bold text-gray-800 mt-1">${item.Name}</h3>
                                 <p class="text-gray-900 font-extrabold text-xl mt-1">$${item.Price}</p>
                             </div>
-                            <button onclick="order('${item.Name}', ${item.Price}, '${storePhone}')" 
-                                    class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center transition-colors">
-                                <i class="fab fa-whatsapp text-2xl"></i>
-                            </button>
+                            <div class="flex items-center bg-gray-100 rounded-2xl p-1">
+                                <button onclick="updateQty('${item.Name}', ${item.Price}, -1)" class="w-8 h-8 flex items-center justify-center text-gray-500 font-bold">-</button>
+                                <span id="qty-${item.Name.replace(/\s+/g, '')}" class="w-8 text-center font-bold text-gray-700">0</span>
+                                <button onclick="updateQty('${item.Name}', ${item.Price}, 1)" class="w-8 h-8 flex items-center justify-center text-green-600 font-bold">+</button>
+                            </div>
                         </div>`;
-                    list.innerHTML += card;
                 });
-            } catch (e) {
-                console.error("Error", e);
-                list.innerHTML = "<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-red-500'>Error al conectar con la base de datos.</div>";
-            }
+            } catch (e) { console.error(e); }
         }
 
-        function order(name, price, phone) {
-            const msg = encodeURIComponent(`*NUEVO PEDIDO DESDE EL CATÁLOGO*\n\n✅ *Producto:* ${name}\n💰 *Precio:* $${price}\n\n¿Me confirma la disponibilidad?`);
-            window.location.href = `https://wa.me/${phone}?text=${msg}`;
+        function updateQty(name, price, delta) {
+            if (!cart[name]) cart[name] = { price: price, qty: 0 };
+            
+            cart[name].qty = Math.max(0, cart[name].qty + delta);
+            
+            // Actualizar número en la tarjeta
+            document.getElementById(`qty-${name.replace(/\s+/g, '')}`).innerText = cart[name].qty;
+            
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            let total = 0;
+            let count = 0;
+            for (const key in cart) {
+                total += cart[key].price * cart[key].qty;
+                count += cart[key].qty;
+            }
+
+            const bar = document.getElementById('cartBar');
+            document.getElementById('cartTotal').innerText = `$${total}`;
+            document.getElementById('cartCount').innerText = `${count} productos`;
+
+            // Mostrar/Ocultar barra si hay productos
+            if (count > 0) bar.classList.remove('translate-y-32');
+            else bar.classList.add('translate-y-32');
+        }
+
+        function sendWhatsAppOrder() {
+            let message = `*NUEVO PEDIDO - ${document.getElementById('storeTitle').innerText}*\n\n`;
+            let total = 0;
+
+            for (const name in cart) {
+                if (cart[name].qty > 0) {
+                    let subtotal = cart[name].price * cart[name].qty;
+                    message += `✅ *${cart[name].qty}x* ${name} - $${subtotal}\n`;
+                    total += subtotal;
+                }
+            }
+
+            message += `\n💰 *TOTAL A PAGAR: $${total}*\n\n¿Me confirman el pedido?`;
+            window.location.href = `https://wa.me/${storePhone}?text=${encodeURIComponent(message)}`;
         }
 
         loadCatalog();
