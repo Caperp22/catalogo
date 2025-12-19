@@ -33,19 +33,15 @@
             const list = document.getElementById('productList');
             const title = document.getElementById('storeTitle');
 
-            // Verificación: Si no hay ID en la URL, avisamos al usuario
-            if (!storeId) {
-                title.innerText = "CercaClick";
-                list.innerHTML = "<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-red-500'>Error: Escanee un código QR válido.</div>";
-                return;
-            }
+           if (!storeId) return;
 
             try {
                 // 2. BUSCAR EN FIREBASE USANDO EL ID LIMPIO
                 const response = await fetch(`https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json`);
                 const data = await response.json();
 
-                if (!data || !data.items) {
+                if (data && data.items) {
+                    document.getElementById('storeTitle').innerText = data.info.StoreName;
                     title.innerText = "No encontrado";
                     list.innerHTML = `<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-gray-500'>El negocio "${storeId}" aún no tiene productos publicados.</div>`;
                     return;
@@ -88,3 +84,4 @@
     </script>
 </body>
 </html>
+
