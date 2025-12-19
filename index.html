@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo - CercaClick</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+        <h1 id="businessName" class="text-2xl font-bold text-center text-blue-600">Cargando...</h1>
+        <p class="text-gray-500 text-sm text-center mb-6">Pedidos por WhatsApp</p>
+
+        <div id="productList" class="space-y-4">
+            </div>
+    </div>
+
+    <script>
+        const BUSINESS_ID = "PanaderiaDonPepe"; // El mismo que usas en C#
+        const FIREBASE_URL = `https://cercaclick-default-rtdb.firebaseio.com/${BUSINESS_ID}.json`;
+
+        async function loadCatalog() {
+            try {
+                const response = await fetch(FIREBASE_URL);
+                const data = await response.json();
+                
+                document.getElementById('businessName').innerText = BUSINESS_ID;
+                const list = document.getElementById('productList');
+                list.innerHTML = "";
+
+                data.items.forEach(item => {
+                    const card = `
+                        <div class="flex justify-between items-center border-b pb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">${item.Name}</h3>
+                                <p class="text-gray-600 text-sm">${item.Category}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-green-600 font-bold">$${item.Price}</p>
+                                <button onclick="order('${item.Name}', ${item.Price})" 
+                                        class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+                                    Pedir
+                                </button>
+                            </div>
+                        </div>`;
+                    list.innerHTML += card;
+                });
+            } catch (e) {
+                console.error("Error cargando catálogo", e);
+            }
+        }
+
+        function order(name, price) {
+            const phone = "573001234567"; // Aquí irá el teléfono del tendero
+            const msg = encodeURIComponent(`Hola, quiero pedir: ${name} ($${price})`);
+            window.location.href = `https://wa.me/${phone}?text=${msg}`;
+        }
+
+        loadCatalog();
+    </script>
+</body>
+</html>
