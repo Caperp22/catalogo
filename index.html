@@ -50,10 +50,10 @@
             }
         }
 
-        function order(name, price) {
-            const phone = "573124208054"; // Aquí irá el teléfono del tendero
-            const msg = encodeURIComponent(`Hola, quiero pedir: ${name} ($${price})`);
-            window.location.href = `https://wa.me/${phone}?text=${msg}`;
+        function sendOrder(name, price) {
+            const phoneNumber = "573124208054"; // El número real del negocio
+            const message = encodeURIComponent(`*NUEVO PEDIDO DE CERCACLICK*\n\nProducto: ${name}\nPrecio: $${price}\n\nPor favor, confírmeme disponibilidad.`);
+            window.location.href = `https://wa.me/${phoneNumber}?text=${message}`;
         }
 
         loadCatalog();
@@ -61,6 +61,7 @@
 </body>
 
 </html>
+
 
 
 
