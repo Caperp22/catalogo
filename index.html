@@ -3,37 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CercaClick - Carrito de Compras</title>
+    <title>CercaClick - Pedidos a Domicilio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-gray-50 min-h-screen font-sans pb-32">
+<body class="bg-gray-50 min-h-screen font-sans pb-40">
     <div class="bg-gradient-to-r from-orange-500 to-amber-600 pt-10 pb-20 px-6 rounded-b-[3rem] shadow-xl text-center">
         <div class="w-16 h-16 bg-white rounded-full mx-auto mb-4 flex items-center justify-center shadow-inner">
-            <i class="fas fa-store text-orange-500 text-2xl"></i>
+            <i class="fas fa-motorcycle text-orange-500 text-2xl"></i>
         </div>
-        <h1 id="storeTitle" class="text-white text-2xl font-black uppercase tracking-tighter text-shadow-sm">Cargando...</h1>
+        <h1 id="storeTitle" class="text-white text-2xl font-black uppercase tracking-tighter">Cargando...</h1>
+        <p class="text-orange-100 text-xs mt-1 font-bold">Selecciona tus productos y cantidades 🛒</p>
     </div>
 
     <div class="max-w-md mx-auto -mt-10 px-4">
         <div id="productList" class="grid grid-cols-1 gap-4">
             </div>
+
+        <div id="deliveryInfo" class="mt-8 bg-white rounded-3xl p-6 shadow-md border border-orange-100 hidden">
+            <h3 class="text-orange-600 font-bold mb-3 flex items-center gap-2">
+                <i class="fas fa-map-marker-alt"></i> Datos de Entrega
+            </h3>
+            <input type="text" id="clientAddress" 
+                   placeholder="Escribe tu dirección exacta..." 
+                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <p class="text-[10px] text-gray-400 mt-2 italic">* El costo del domicilio se acordará por WhatsApp.</p>
+        </div>
     </div>
 
-    <div id="cartBar" class="fixed bottom-6 left-4 right-4 bg-green-600 text-white rounded-3xl shadow-2xl p-4 transform translate-y-32 transition-transform duration-300 flex justify-between items-center z-50">
+    <div id="cartBar" class="fixed bottom-6 left-4 right-4 bg-green-600 text-white rounded-3xl shadow-2xl p-4 transform translate-y-40 transition-all duration-500 flex justify-between items-center z-50">
         <div class="flex flex-col">
-            <span id="cartCount" class="text-xs font-bold bg-white text-green-700 px-2 py-0.5 rounded-full w-fit">0 items</span>
+            <span id="cartCount" class="text-[10px] font-bold bg-green-800 text-white px-2 py-0.5 rounded-full w-fit">0 items</span>
             <span id="cartTotal" class="text-xl font-black">$0</span>
         </div>
-        <button onclick="sendWhatsAppOrder()" class="bg-white text-green-700 px-6 py-2 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-transform">
-            Pedir por <i class="fab fa-whatsapp text-xl"></i>
+        <button onclick="sendWhatsAppOrder()" class="bg-white text-green-700 px-6 py-2 rounded-2xl font-bold flex items-center gap-2 active:scale-95 transition-transform shadow-lg">
+            Finalizar Pedido <i class="fab fa-whatsapp text-xl"></i>
         </button>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const storeId = urlParams.get('store');
-        let cart = {}; // Estructura: { "Nombre": { price: 1500, qty: 1 } }
+        let cart = {}; 
         let storePhone = "";
 
         async function loadCatalog() {
@@ -43,24 +54,24 @@
                 const data = await response.json();
                 if (!data || !data.items) return;
 
-                document.getElementById('storeTitle').innerText = data.info.StoreName || "Mi Negocio";
-                storePhone = data.info.WhatsAppPhone || "573001234567";
+                document.getElementById('storeTitle').innerText = data.info.StoreName;
+                storePhone = data.info.WhatsAppPhone;
                 
                 const list = document.getElementById('productList');
                 list.innerHTML = "";
 
                 data.items.forEach(item => {
                     list.innerHTML += `
-                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center">
                             <div class="flex-1">
                                 <span class="text-[10px] font-bold text-orange-500 uppercase bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
-                                <h3 class="text-lg font-bold text-gray-800 mt-1">${item.Name}</h3>
-                                <p class="text-gray-900 font-extrabold text-xl mt-1">$${item.Price}</p>
+                                <h3 class="text-base font-bold text-gray-800 mt-1">${item.Name}</h3>
+                                <p class="text-gray-900 font-black text-lg">$${item.Price}</p>
                             </div>
-                            <div class="flex items-center bg-gray-100 rounded-2xl p-1">
-                                <button onclick="updateQty('${item.Name}', ${item.Price}, -1)" class="w-8 h-8 flex items-center justify-center text-gray-500 font-bold">-</button>
+                            <div class="flex items-center bg-gray-100 rounded-2xl p-1 ml-4">
+                                <button onclick="updateQty('${item.Name}', ${item.Price}, -1)" class="w-8 h-8 flex items-center justify-center text-gray-400 font-black">-</button>
                                 <span id="qty-${item.Name.replace(/\s+/g, '')}" class="w-8 text-center font-bold text-gray-700">0</span>
-                                <button onclick="updateQty('${item.Name}', ${item.Price}, 1)" class="w-8 h-8 flex items-center justify-center text-green-600 font-bold">+</button>
+                                <button onclick="updateQty('${item.Name}', ${item.Price}, 1)" class="w-8 h-8 flex items-center justify-center text-green-600 font-black">+</button>
                             </div>
                         </div>`;
                 });
@@ -69,45 +80,57 @@
 
         function updateQty(name, price, delta) {
             if (!cart[name]) cart[name] = { price: price, qty: 0 };
-            
             cart[name].qty = Math.max(0, cart[name].qty + delta);
-            
-            // Actualizar número en la tarjeta
             document.getElementById(`qty-${name.replace(/\s+/g, '')}`).innerText = cart[name].qty;
-            
             updateCartUI();
         }
 
         function updateCartUI() {
-            let total = 0;
-            let count = 0;
+            let total = 0, count = 0;
             for (const key in cart) {
                 total += cart[key].price * cart[key].qty;
                 count += cart[key].qty;
             }
 
             const bar = document.getElementById('cartBar');
-            document.getElementById('cartTotal').innerText = `$${total}`;
+            const deliverySection = document.getElementById('deliveryInfo');
+            
+            document.getElementById('cartTotal').innerText = `$${total.toLocaleString()}`;
             document.getElementById('cartCount').innerText = `${count} productos`;
 
-            // Mostrar/Ocultar barra si hay productos
-            if (count > 0) bar.classList.remove('translate-y-32');
-            else bar.classList.add('translate-y-32');
+            if (count > 0) {
+                bar.classList.remove('translate-y-40');
+                deliverySection.classList.remove('hidden');
+            } else {
+                bar.classList.add('translate-y-40');
+                deliverySection.classList.add('hidden');
+            }
         }
 
         function sendWhatsAppOrder() {
-            let message = `*NUEVO PEDIDO - ${document.getElementById('storeTitle').innerText}*\n\n`;
+            const address = document.getElementById('clientAddress').value;
+            if (!address) {
+                alert("Por favor, ingresa tu dirección para el domicilio.");
+                return;
+            }
+
+            let message = `*NUEVO PEDIDO - ${document.getElementById('storeTitle').innerText}*\n`;
+            message += `---------------------------\n`;
             let total = 0;
 
             for (const name in cart) {
                 if (cart[name].qty > 0) {
                     let subtotal = cart[name].price * cart[name].qty;
-                    message += `✅ *${cart[name].qty}x* ${name} - $${subtotal}\n`;
+                    message += `✅ *${cart[name].qty}x* ${name} ($${subtotal.toLocaleString()})\n`;
                     total += subtotal;
                 }
             }
 
-            message += `\n💰 *TOTAL A PAGAR: $${total}*\n\n¿Me confirman el pedido?`;
+            message += `---------------------------\n`;
+            message += `💰 *TOTAL PRODUCTOS: $${total.toLocaleString()}*\n`;
+            message += `📍 *ENTREGAR EN:* ${address}\n\n`;
+            message += `¿Me confirman la disponibilidad y el costo del domicilio?`;
+
             window.location.href = `https://wa.me/${storePhone}?text=${encodeURIComponent(message)}`;
         }
 
