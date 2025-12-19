@@ -25,50 +25,66 @@
     </div>
 
     <script>
-    // 1. Detectar el nombre del negocio desde la URL (?store=Nombre)
-    const urlParams = new URLSearchParams(window.location.search);
-    const storeId = urlParams.get('store') || "PanaderiaDonPepe"; // "PanaderiaDonPepe" es el respaldo
+        // 1. OBTENER EL ID DEL NEGOCIO DESDE LA URL (Ej: ?store=panaderiadonpepe)
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeId = urlParams.get('store');
 
-    const FIREBASE_URL = `https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json`;
-
-    async function loadCatalog() {
-        try {
-            const response = await fetch(FIREBASE_URL);
-            const data = await response.json();
-            
-            // Usamos el nombre que viene en la "info" que subiste desde la App
-            document.getElementById('storeTitle').innerText = data.info.StoreName || storeId;
-            
+        async function loadCatalog() {
             const list = document.getElementById('productList');
-            list.innerHTML = "";
+            const title = document.getElementById('storeTitle');
 
-            data.items.forEach(item => {
-                const card = `
-                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center">
-                        <div class="flex-1">
-                            <span class="text-[10px] font-bold text-orange-500 uppercase bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
-                            <h3 class="text-lg font-bold text-gray-800 mt-1">${item.Name}</h3>
-                            <p class="text-gray-900 font-extrabold text-xl mt-1">$${item.Price}</p>
-                        </div>
-                        <button onclick="order('${item.Name}', ${item.Price}, '${data.info.WhatsAppPhone}')" 
-                                class="bg-green-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center">
-                            <i class="fab fa-whatsapp text-2xl"></i>
-                        </button>
-                    </div>`;
-                list.innerHTML += card;
-            });
-        } catch (e) {
-            console.error("Error cargando el catálogo", e);
+            // Verificación: Si no hay ID en la URL, avisamos al usuario
+            if (!storeId) {
+                title.innerText = "CercaClick";
+                list.innerHTML = "<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-red-500'>Error: Escanee un código QR válido.</div>";
+                return;
+            }
+
+            try {
+                // 2. BUSCAR EN FIREBASE USANDO EL ID LIMPIO
+                const response = await fetch(`https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json`);
+                const data = await response.json();
+
+                if (!data || !data.items) {
+                    title.innerText = "No encontrado";
+                    list.innerHTML = `<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-gray-500'>El negocio "${storeId}" aún no tiene productos publicados.</div>`;
+                    return;
+                }
+
+                // 3. ACTUALIZAR INFO DEL NEGOCIO DESDE FIREBASE
+                title.innerText = data.info.StoreName || "Mi Negocio";
+                const storePhone = data.info.WhatsAppPhone || "573001234567";
+                
+                list.innerHTML = "";
+
+                // 4. GENERAR LAS TARJETAS DE PRODUCTOS
+                data.items.forEach(item => {
+                    const card = `
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex justify-between items-center transform active:scale-95 transition-transform">
+                            <div class="flex-1">
+                                <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-md">${item.Category}</span>
+                                <h3 class="text-lg font-bold text-gray-800 mt-1">${item.Name}</h3>
+                                <p class="text-gray-900 font-extrabold text-xl mt-1">$${item.Price}</p>
+                            </div>
+                            <button onclick="order('${item.Name}', ${item.Price}, '${storePhone}')" 
+                                    class="bg-green-500 hover:bg-green-600 text-white w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center transition-colors">
+                                <i class="fab fa-whatsapp text-2xl"></i>
+                            </button>
+                        </div>`;
+                    list.innerHTML += card;
+                });
+            } catch (e) {
+                console.error("Error", e);
+                list.innerHTML = "<div class='bg-white p-6 rounded-2xl shadow-sm text-center text-red-500'>Error al conectar con la base de datos.</div>";
+            }
         }
-    }
 
-    function order(name, price, phone) {
-        const msg = encodeURIComponent(`*NUEVO PEDIDO*\n\n✅ *Producto:* ${name}\n💰 *Precio:* $${price}`);
-        window.location.href = `https://wa.me/${phone}?text=${msg}`;
-    }
+        function order(name, price, phone) {
+            const msg = encodeURIComponent(`*NUEVO PEDIDO DESDE EL CATÁLOGO*\n\n✅ *Producto:* ${name}\n💰 *Price:* $${price}\n\n¿Me confirma la disponibilidad?`);
+            window.location.href = `https://wa.me/${phone}?text=${msg}`;
+        }
 
-    loadCatalog();
-</script>
+        loadCatalog();
+    </script>
 </body>
 </html>
-
