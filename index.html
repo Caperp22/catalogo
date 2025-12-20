@@ -81,22 +81,51 @@
             document.getElementById('deliveryInfo').style.display = c > 0 ? "block" : "none";
         }
 
-        function sendOrder() {
+       function sendOrder() {
             const addr = document.getElementById('clientAddress').value;
             if (!addr) return alert("Ingresa tu dirección");
-            let msg = `*NUEVO PEDIDO*\n`, total = 0;
+        
+            // Validamos el teléfono
+            if (!phone || phone === "undefined") {
+                alert("Error: No se encontró el teléfono de la tienda.");
+                return;
+            }
+        
+            // 1. Obtenemos el nombre de la tienda para el título
+            const storeName = document.getElementById('storeTitle').innerText;
+        
+            // 2. Iniciamos el mensaje con Título y Separador
+            let msg = `*NUEVO PEDIDO - ${storeName.toUpperCase()}*\n`;
+            msg += `-----------------------------------\n`;
+        
+            let total = 0;
+            
+            // 3. Recorremos el carrito
             for (let k in cart) {
                 if (cart[k].q > 0) {
-                    msg += `✅ ${cart[k].q}x ${k} ($${cart[k].p * cart[k].q})\n`;
-                    total += cart[k].p * cart[k].q;
+                    const subtotal = cart[k].p * cart[k].q;
+                    total += subtotal;
+        
+                    // Agregamos ítem con formato de dinero bonito (con comas)
+                    // Ejemplo: 2x Pastel ($60,000)
+                    msg += `✅ ${cart[k].q}x ${k} ($${subtotal.toLocaleString('es-CO')})\n`;
                 }
             }
-            msg += `\n💰 *Total: $${total}*\n📍 *Entregar en:* ${addr}`;
-            window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+        
+            // 4. Agregamos el Total y el Pie de página
+            msg += `-----------------------------------\n`;
+            msg += `💰 *TOTAL PRODUCTOS: $${total.toLocaleString('es-CO')}*\n`;
+            msg += `📍 *ENTREGAR EN:* ${addr}\n\n`;
+            msg += `¿Me confirman la disponibilidad y el costo del domicilio?`;
+        
+            // 5. Enviamos a WhatsApp
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
         }
 
         init();
     </script>
 </body>
 </html>
+
 
