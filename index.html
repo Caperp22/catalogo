@@ -36,7 +36,7 @@
 
         async function init() {
             if (!storeId) return;
-            const res = await fetch(`https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json`);
+            const res = await fetch(`https://cercaclick-default-rtdb.firebaseio.com/${storeId}.json?t=${Date.now()}`);
             const data = await res.json();
             
             if (!data) return;
@@ -99,3 +99,4 @@
     </script>
 </body>
 </html>
+
